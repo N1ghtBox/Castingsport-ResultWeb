@@ -41,6 +41,19 @@ const TAB_LABELS: Record<string, string> = {
 const TAB_ORDER = ["3boj", "5boj", "7boj", "9boj", "multi", "distance"];
 const RESULT_KEYS = new Set(TAB_ORDER);
 
+const CATEGORY_ORDER = ["Kadet", "Junior", "Juniorka", "Mężczyzna", "Kobieta"];
+
+function sortCategories(cats: string[]): string[] {
+  return [...cats].sort((a, b) => {
+    const ai = CATEGORY_ORDER.indexOf(a);
+    const bi = CATEGORY_ORDER.indexOf(b);
+    if (ai === -1 && bi === -1) return a.localeCompare(b);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+}
+
 function firstNonEmpty(tabData: Record<string, Competitor[]>): string {
   return (
     Object.keys(tabData).find((k) => tabData[k].length > 0) ??
@@ -95,7 +108,7 @@ export default function ResultsPage({ id }: { id: string }) {
   const tabData = results[activeTab] ?? {};
 
   const nonEmptyCategories = useMemo(
-    () => Object.keys(tabData).filter((c) => tabData[c].length > 0),
+    () => sortCategories(Object.keys(tabData).filter((c) => tabData[c].length > 0)),
     [tabData]
   );
 
