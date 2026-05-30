@@ -1,68 +1,30 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Link from "next/link";
+import {
+  CompetitionDoc,
+  ResultsData,
+  TAB_ORDER,
+  isStaticResultKey,
+  getTabLabel,
+  contestNum,
+  firstNonEmpty,
+} from "./results-types";
+import StaticResultsView from "./StaticResultsView";
+import ContestResultsView, { buildContestTabData } from "./ContestResultsView";
 
-export type Competitor = {
-  id: string;
-  name: string;
-  number: number;
-  category: string;
-  club: string;
-  girl: boolean;
-  isNew: boolean;
-  total: number;
-  place: number;
-  [key: string]: string | number | boolean;
-};
-
-export type ResultsData = {
-  [tab: string]: {
-    [category: string]: Competitor[];
-  };
-};
-
-export type CompetitionDoc = ResultsData & {
-  name?: string;
-  date?: string;
-};
-
-const TAB_LABELS: Record<string, string> = {
-  "3boj": "3-bój",
-  "5boj": "5-bój",
-  "7boj": "7-bój",
-  "9boj": "9-bój",
-  multi: "Multi",
-  distance: "Odległość",
-};
-
-const TAB_ORDER = ["3boj", "5boj", "7boj", "9boj", "multi", "distance"];
-const RESULT_KEYS = new Set(TAB_ORDER);
-
-const CATEGORY_ORDER = ["Kadet", "Junior", "Juniorka", "Mężczyzna", "Kobieta"];
-
-function sortCategories(cats: string[]): string[] {
-  return [...cats].sort((a, b) => {
-    const ai = CATEGORY_ORDER.indexOf(a);
-    const bi = CATEGORY_ORDER.indexOf(b);
-    if (ai === -1 && bi === -1) return a.localeCompare(b);
-    if (ai === -1) return 1;
-    if (bi === -1) return -1;
-    return ai - bi;
-  });
-}
-
-function firstNonEmpty(tabData: Record<string, Competitor[]>): string {
-  return (
-    Object.keys(tabData).find((k) => tabData[k].length > 0) ??
-    Object.keys(tabData)[0] ??
-    ""
-  );
-}
+export type { Competitor, ResultsData, CompetitionDoc } from "./results-types";
 
 export default function ResultsPage({ id }: { id: string }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const initializedRef = useRef(false);
+
   const [data, setData] = useState<CompetitionDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,16 +40,8 @@ export default function ResultsPage({ id }: { id: string }) {
           setLoading(false);
           return;
         }
-        const d = snap.data() as CompetitionDoc;
-        setData(d);
+        setData(snap.data() as CompetitionDoc);
         setLoading(false);
-        setActiveTab((prev) => {
-          const tabs = TAB_ORDER.filter((k) => RESULT_KEYS.has(k) && k in d);
-          if (prev && tabs.includes(prev)) return prev;
-          const first = tabs[0] ?? "";
-          setActiveCategory(firstNonEmpty((d[first] as Record<string, Competitor[]>) ?? {}));
-          return first;
-        });
       },
       (err) => {
         setError(err.message);
@@ -100,23 +54,80 @@ export default function ResultsPage({ id }: { id: string }) {
   const results: ResultsData = useMemo(() => {
     if (!data) return {};
     return Object.fromEntries(
-      Object.entries(data).filter(([k]) => RESULT_KEYS.has(k))
+      Object.entries(data).filter(([k]) => isStaticResultKey(k))
     ) as ResultsData;
   }, [data]);
 
-  const tabs = TAB_ORDER.filter((k) => k in results);
-  const tabData = results[activeTab] ?? {};
+  const contestKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const tabData of Object.values(results)) {
+      for (const comps of Object.values(tabData)) {
+        for (const c of comps) {
+          for (const k of Object.keys(c)) {
+            if (/^contest-\d+$/.test(k)) keys.add(k);
+          }
+        }
+      }
+    }
+    return [...keys].sort((a, b) => contestNum(a) - contestNum(b));
+  }, [results]);
 
-  const nonEmptyCategories = useMemo(
-    () => sortCategories(Object.keys(tabData).filter((c) => tabData[c].length > 0)),
-    [tabData]
+  const tabs = useMemo(
+    () => [...TAB_ORDER.filter((k) => k in results), ...contestKeys],
+    [results, contestKeys]
   );
 
-  const rows = useMemo(() => tabData[activeCategory] ?? [], [tabData, activeCategory]);
+  useEffect(() => {
+    if (tabs.length === 0) return;
+
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      const urlTab = searchParams.get("tab") ?? "";
+      const urlCategory = searchParams.get("category") ?? "";
+      const tabToUse = urlTab && tabs.includes(urlTab) ? urlTab : tabs[0];
+      const tabData = /^contest-\d+$/.test(tabToUse)
+        ? buildContestTabData(results, tabToUse)
+        : (results[tabToUse] ?? {});
+      const catToUse =
+        urlCategory && urlCategory in tabData
+          ? urlCategory
+          : firstNonEmpty(tabData);
+      setActiveTab(tabToUse);
+      setActiveCategory(catToUse);
+      return;
+    }
+
+    setActiveTab((prev) => {
+      if (prev && tabs.includes(prev)) return prev;
+      const first = tabs[0];
+      const firstTabData = /^contest-\d+$/.test(first)
+        ? buildContestTabData(results, first)
+        : (results[first] ?? {});
+      setActiveCategory(firstNonEmpty(firstTabData));
+      return first;
+    });
+  }, [tabs, results]);
+
+  function syncUrl(tab: string, category: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    params.set("category", category);
+    router.replace(`${pathname}?${params.toString()}`);
+  }
 
   function handleTabChange(tab: string) {
     setActiveTab(tab);
-    setActiveCategory(firstNonEmpty(results[tab] ?? {}));
+    const nextTabData = /^contest-\d+$/.test(tab)
+      ? buildContestTabData(results, tab)
+      : (results[tab] ?? {});
+    const cat = firstNonEmpty(nextTabData);
+    setActiveCategory(cat);
+    syncUrl(tab, cat);
+  }
+
+  function handleCategoryChange(category: string) {
+    setActiveCategory(category);
+    syncUrl(activeTab, category);
   }
 
   if (loading) {
@@ -135,6 +146,8 @@ export default function ResultsPage({ id }: { id: string }) {
     );
   }
 
+  const isContestTab = /^contest-\d+$/.test(activeTab);
+
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-8">
       <div className="mb-6 flex items-center gap-3">
@@ -152,84 +165,42 @@ export default function ResultsPage({ id }: { id: string }) {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => handleTabChange(tab)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeTab === tab
-                ? "bg-blue-500 text-white shadow"
-                : "bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700"
-              }`}
-          >
-            {TAB_LABELS[tab] ?? tab}
-          </button>
+      <div className="flex flex-col gap-2 mb-6">
+        {[
+          TAB_ORDER.filter((k) => k in results),
+          contestKeys,
+        ].filter((group) => group.length > 0).map((group, gi) => (
+          <div key={gi} className="flex flex-wrap gap-2">
+            {group.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  activeTab === tab
+                    ? "bg-blue-500 text-white shadow"
+                    : "bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700"
+                }`}
+              >
+                {getTabLabel(tab)}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
 
-      {/* Category filters */}
-      {nonEmptyCategories.length > 1 && (
-        <div className="flex flex-wrap gap-2 mb-5">
-          {nonEmptyCategories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${activeCategory === cat
-                  ? "bg-emerald-500 text-white border-emerald-500"
-                  : "bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
-                }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Table */}
-      {rows.length === 0 ? (
-        <p className="text-center text-gray-500 mt-12">Brak wyników</p>
+      {isContestTab ? (
+        <ContestResultsView
+          results={results}
+          contestKey={activeTab}
+          activeCategory={activeCategory}
+          onCategoryChange={handleCategoryChange}
+        />
       ) : (
-        <div className="overflow-x-auto rounded-xl shadow">
-          <table className="w-full text-sm bg-gray-900">
-            <thead>
-              <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-                <th className="px-3 py-3 text-center w-10">Miejsce</th>
-                <th className="px-3 py-3 text-left">Zawodnik</th>
-                <th className="px-3 py-3 text-left hidden sm:table-cell">Klub</th>
-                <th className="px-3 py-3 text-left hidden md:table-cell">Kategoria</th>
-                <th className="px-3 py-3 text-right font-bold">Suma</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((competitor, i) => {
-                return (
-                  <tr
-                    key={competitor.id}
-                    className={`border-t border-gray-800 transition-colors hover:bg-gray-800 ${i % 2 === 0 ? "bg-gray-900" : "bg-[#111827]"
-                      }`}
-                  >
-                    <td className={`px-3 py-3 text-center text-gray-400`}>
-                      {competitor.place}
-                    </td>
-                    <td className="px-3 py-3 font-medium text-white">{competitor.name}</td>
-                    <td className="px-3 py-3 text-gray-400 hidden sm:table-cell">
-                      {competitor.club}
-                    </td>
-                    <td className="px-3 py-3 hidden md:table-cell">
-                      <span className="inline-block px-2 py-0.5 bg-gray-700 text-gray-300 rounded-full text-xs">
-                        {competitor.category}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-right font-bold tabular-nums text-white">
-                      {competitor.total.toFixed(2)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <StaticResultsView
+          tabData={results[activeTab] ?? {}}
+          activeCategory={activeCategory}
+          onCategoryChange={handleCategoryChange}
+        />
       )}
     </main>
   );
