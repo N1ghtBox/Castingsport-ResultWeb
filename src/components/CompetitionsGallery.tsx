@@ -15,6 +15,24 @@ type CompetitionMeta = {
 
 const RESULT_KEYS = new Set(["3boj", "5boj", "7boj", "9boj", "multi", "distance"]);
 
+// 3-char prefixes, matches both nominative (sierpień) and genitive (sierpnia) Polish forms.
+const MONTH_PREFIXES = ["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paź","lis","gru"];
+
+// Parse "10-12 sierpnia 2026" -> sortable timestamp. Missing/unparseable dates sort last.
+function dateSortKey(date?: string): number {
+  if (!date) return -Infinity;
+  const m = date.toLowerCase().match(/(\d+)(?:\s*-\s*\d+)?\s+([a-zżźćńółęąś]+)\s+(\d{4})/);
+  if (!m) return -Infinity;
+  const [, day, month, year] = m;
+  const mi = MONTH_PREFIXES.indexOf(month.slice(0, 3));
+  return new Date(Number(year), mi < 0 ? 0 : mi, Number(day)).getTime();
+}
+
+function dateYear(date?: string): string {
+  const m = date?.match(/(\d{4})/);
+  return m ? m[1] : "—";
+}
+
 export default function CompetitionsGallery() {
   const [competitions, setCompetitions] = useState<CompetitionMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +64,7 @@ export default function CompetitionsGallery() {
             participantCount,
           };
         });
+        data.sort((a, b) => dateSortKey(b.date) - dateSortKey(a.date));
         setCompetitions(data);
         setLoading(false);
       },
@@ -81,25 +100,36 @@ export default function CompetitionsGallery() {
       {competitions.length === 0 ? (
         <p className="text-gray-500 mt-12 text-center">Brak zawodów</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {competitions.map((comp) => (
-            <Link
-              key={comp.id}
-              href={`/competition/${comp.id}`}
-              className="group block bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-blue-500 hover:bg-gray-800 transition-all"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <h2 className="font-semibold text-white text-lg leading-tight group-hover:text-blue-400 transition-colors">
-                  {comp.name ?? "Zawody"}
-                </h2>
-                <span className="text-blue-400 text-lg ml-2 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-              </div>
-              {comp.date && (
-                <p className="text-gray-500 text-xs mb-3">{comp.date}</p>
-              )}
-            </Link>
-          ))}
-        </div>
+        Array.from(
+          competitions.reduce<Map<string, CompetitionMeta[]>>((acc, comp) => {
+            const y = dateYear(comp.date);
+            (acc.get(y) ?? acc.set(y, []).get(y)!).push(comp);
+            return acc;
+          }, new Map())
+        ).map(([year, comps]) => (
+          <section key={year} className="mb-8">
+            <h2 className="text-gray-400 text-sm font-semibold mb-3">{year}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {comps.map((comp) => (
+                <Link
+                  key={comp.id}
+                  href={`/competition/${comp.id}`}
+                  className="group block bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-blue-500 hover:bg-gray-800 transition-all"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-semibold text-white text-lg leading-tight group-hover:text-blue-400 transition-colors">
+                      {comp.name ?? "Zawody"}
+                    </h3>
+                    <span className="text-blue-400 text-lg ml-2 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                  </div>
+                  {comp.date && (
+                    <p className="text-gray-500 text-xs mb-3">{comp.date}</p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
+        ))
       )}
     </main>
   );
