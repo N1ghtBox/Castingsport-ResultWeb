@@ -3,6 +3,10 @@
 import { useMemo } from "react";
 import { Competitor, ResultsData, sortCategories } from "./results-types";
 
+const SINGLE_SCORE_CONTESTS = [1, 3, 4, 8]
+const DOUBLE_SCORE_CONTESTS = [2, 6]
+const DISTANCE_SCORE_CONTESTS = [5, 7, 9]
+
 type Props = {
   results: ResultsData;
   contestKey: string;
@@ -10,13 +14,45 @@ type Props = {
   onCategoryChange: (cat: string) => void;
 };
 
+function getBoj(contestId: number): keyof ResultsData {
+  if (contestId > 5) return '9boj'
+  if (contestId < 3) return '5boj'
+  return '3boj'
+}
+
+function getTotalScore(competitor: Competitor, contestId: string): number {
+  const [_, id] = contestId.split('-')
+
+  if (Number.isNaN(Number(id))) return 0;
+  if (SINGLE_SCORE_CONTESTS.includes(Number(id))) {
+    if (Number.isNaN(Number(competitor[contestId]))) return 0;
+    return Number(competitor[contestId])
+  }
+  if (DOUBLE_SCORE_CONTESTS.includes(Number(id))) {
+    const [first, second] = competitor[contestId].toString().split(' ')
+
+    if (Number.isNaN(Number(first))) return 0;
+    if (Number.isNaN(Number(second))) return 0;
+
+    return Number(first) + Number(second);
+  }
+  if (DISTANCE_SCORE_CONTESTS.includes(Number(id))) {
+    const [_, second] = competitor[contestId].toString().split(' ')
+
+    if (Number.isNaN(Number(second))) return 0;
+
+    return Number(second);
+  }
+  return 0;
+}
+
 export function buildContestTabData(
   results: ResultsData,
   contestKey: string
 ): Record<string, Competitor[]> {
   const byCategory: Record<string, Competitor[]> = {};
   const id = Number.parseInt(contestKey[contestKey.length - 1])
-  const tabData = results[id > 5 ? '9boj' : '5boj']
+  const tabData = results[getBoj(id)]
   for (const [cat, comps] of Object.entries(tabData)) {
     const withScore = comps.filter((c) => contestKey in c);
     if (withScore.length === 0) continue;
@@ -47,7 +83,8 @@ export default function ContestResultsView({
     [tabData]
   );
 
-  const rows = useMemo(() => tabData[activeCategory] ?? [], [tabData, activeCategory]);
+  const rows = useMemo(() => tabData[activeCategory].sort((a, b) =>
+    getTotalScore(b, contestKey) - getTotalScore(a, contestKey)) ?? [], [tabData, activeCategory]);
 
   return (
     <>
@@ -84,7 +121,6 @@ export default function ContestResultsView({
             </thead>
             <tbody>
               {rows.map((competitor, i) => {
-                console.log(competitor, contestKey)
                 const score = competitor[contestKey] as number;
                 return (
                   <tr
