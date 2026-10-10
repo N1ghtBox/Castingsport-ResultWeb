@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useT } from "@/lib/i18n";
 import Link from "next/link";
 
 type CompetitionMeta = {
@@ -34,6 +35,7 @@ function dateYear(date?: string): string {
 }
 
 export default function CompetitionsGallery() {
+  const t = useT();
   const [competitions, setCompetitions] = useState<CompetitionMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export default function CompetitionsGallery() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <p className="text-gray-400 text-sm animate-pulse">Ładowanie zawodów…</p>
+        <p className="text-gray-400 text-sm animate-pulse">{t("Ładowanie zawodów…")}</p>
       </div>
     );
   }
@@ -87,18 +89,18 @@ export default function CompetitionsGallery() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <p className="text-red-400 text-sm">Błąd: {error}</p>
+        <p className="text-red-400 text-sm">{t("Błąd")}: {error}</p>
       </div>
     );
   }
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-8">
-      <h1 className="text-3xl font-bold mb-2 text-white tracking-tight">Zawody</h1>
-      <p className="text-gray-500 text-sm mb-8">Wybierz zawody, aby zobaczyć wyniki</p>
+      <h1 className="text-3xl font-bold mb-2 text-white tracking-tight">{t("Zawody")}</h1>
+      <p className="text-gray-500 text-sm mb-8">{t("Wybierz zawody, aby zobaczyć wyniki")}</p>
 
       {competitions.length === 0 ? (
-        <p className="text-gray-500 mt-12 text-center">Brak zawodów</p>
+        <p className="text-gray-500 mt-12 text-center">{t("Brak zawodów")}</p>
       ) : (
         Array.from(
           competitions.reduce<Map<string, CompetitionMeta[]>>((acc, comp) => {
@@ -118,7 +120,7 @@ export default function CompetitionsGallery() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <h3 className="font-semibold text-white text-lg leading-tight group-hover:text-blue-400 transition-colors">
-                      {comp.name ?? "Zawody"}
+                      {comp.name ?? t("Zawody")}
                     </h3>
                     <span className="text-blue-400 text-lg ml-2 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                   </div>

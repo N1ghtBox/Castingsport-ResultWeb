@@ -4,13 +4,13 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useT } from "@/lib/i18n";
 import Link from "next/link";
 import {
   CompetitionDoc,
   ResultsData,
   TAB_ORDER,
   isStaticResultKey,
-  getTabLabel,
   contestNum,
   firstNonEmpty,
 } from "./results-types";
@@ -20,6 +20,7 @@ import ContestResultsView, { buildContestTabData } from "./ContestResultsView";
 export type { Competitor, ResultsData, CompetitionDoc } from "./results-types";
 
 export default function ResultsPage({ id }: { id: string }) {
+  const t = useT();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -133,7 +134,7 @@ export default function ResultsPage({ id }: { id: string }) {
   if (loading) {
     return (
       <main className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <p className="text-gray-400 text-sm animate-pulse">Ładowanie wyników…</p>
+        <p className="text-gray-400 text-sm animate-pulse">{t("Ładowanie wyników…")}</p>
       </main>
     );
   }
@@ -141,7 +142,7 @@ export default function ResultsPage({ id }: { id: string }) {
   if (error) {
     return (
       <main className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <p className="text-red-400 text-sm">Błąd: {error}</p>
+        <p className="text-red-400 text-sm">{t("Błąd")}: {t(error)}</p>
       </main>
     );
   }
@@ -155,7 +156,7 @@ export default function ResultsPage({ id }: { id: string }) {
           href="/"
           className="text-gray-400 hover:text-white transition-colors text-sm"
         >
-          ← Zawody
+          ← {t("Zawody")}
         </Link>
         <h1 className="text-2xl font-bold tracking-tight text-white">
           {data?.name ?? id}
@@ -181,7 +182,7 @@ export default function ResultsPage({ id }: { id: string }) {
                     : "bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700"
                 }`}
               >
-                {getTabLabel(tab)}
+                {t(tab)}
               </button>
             ))}
           </div>

@@ -22,37 +22,12 @@ export type CompetitionDoc = ResultsData & {
   date?: string;
 };
 
-export const TAB_LABELS: Record<string, string> = {
-  "3boj": "3-bój",
-  "5boj": "5-bój",
-  "7boj": "7-bój",
-  "9boj": "9-bój",
-  multi: "Multi",
-  distance: "Odległość",
-};
-
-export const CONTEST_LABELS: Record<string, string> = {
-  "contest-1": "Mucha cel",
-  "contest-2": "Mucha odlegość",
-  "contest-3": "Arenberg",
-  "contest-4": "Skish",
-  "contest-5": "Odległość 7.5g",
-  "contest-6": "Mucha odlegość oburącz",
-  "contest-7": "Odległość oburącz",
-  "contest-8": "Multi skish",
-  "contest-9": "Multi odległość",
-};
-
 export const TAB_ORDER = ["3boj", "5boj", "7boj", "9boj", "multi", "distance"];
 
 export const CATEGORY_ORDER = ["Kadet", "Junior", "Juniorka", "Mężczyzna", "Kobieta"];
 
 export function isStaticResultKey(k: string): boolean {
   return TAB_ORDER.includes(k);
-}
-
-export function getTabLabel(tab: string): string {
-  return TAB_LABELS[tab] ?? CONTEST_LABELS[tab] ?? tab;
 }
 
 export function contestNum(k: string): number {

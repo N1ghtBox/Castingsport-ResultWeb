@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Competitor, ResultsData, sortCategories } from "./results-types";
+import { useT } from "@/lib/i18n";
 
 const SINGLE_SCORE_CONTESTS = [1, 3, 4, 8]
 const DOUBLE_SCORE_CONTESTS = [2, 6]
@@ -15,7 +16,9 @@ type Props = {
 };
 
 function getBoj(contestId: number): keyof ResultsData {
-  if (contestId > 5) return '9boj'
+  // pick the tab that contains every competitor of the contest
+  if (contestId > 7) return 'multi'
+  if (contestId > 5) return 'distance'
   if (contestId < 3) return '5boj'
   return '3boj'
 }
@@ -52,7 +55,7 @@ export function buildContestTabData(
 ): Record<string, Competitor[]> {
   const byCategory: Record<string, Competitor[]> = {};
   const id = Number.parseInt(contestKey[contestKey.length - 1])
-  const tabData = results[getBoj(id)]
+  const tabData = results[getBoj(id)] ?? {}
   for (const [cat, comps] of Object.entries(tabData)) {
     const withScore = comps.filter((c) => contestKey in c);
     if (withScore.length === 0) continue;
@@ -73,6 +76,7 @@ export default function ContestResultsView({
   activeCategory,
   onCategoryChange,
 }: Props) {
+  const t = useT();
   const tabData = useMemo(
     () => buildContestTabData(results, contestKey),
     [results, contestKey]
@@ -99,24 +103,24 @@ export default function ContestResultsView({
                 : "bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
                 }`}
             >
-              {cat}
+              {t(cat)}
             </button>
           ))}
         </div>
       )}
 
       {rows.length === 0 ? (
-        <p className="text-center text-gray-500 mt-12">Brak wyników</p>
+        <p className="text-center text-gray-500 mt-12">{t("Brak wyników")}</p>
       ) : (
         <div className="overflow-x-auto rounded-xl shadow">
           <table className="w-full text-sm bg-gray-900">
             <thead>
               <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-                <th className="px-3 py-3 text-center w-10">Miejsce</th>
-                <th className="px-3 py-3 text-left">Zawodnik</th>
-                <th className="px-3 py-3 text-left hidden sm:table-cell">Klub</th>
-                <th className="px-3 py-3 text-left hidden md:table-cell">Kategoria</th>
-                <th className="px-3 py-3 text-right font-bold">Wynik</th>
+                <th className="px-3 py-3 text-center w-10">{t("Miejsce")}</th>
+                <th className="px-3 py-3 text-left">{t("Zawodnik")}</th>
+                <th className="px-3 py-3 text-left hidden sm:table-cell">{t("Klub")}</th>
+                <th className="px-3 py-3 text-left hidden md:table-cell">{t("Kategoria")}</th>
+                <th className="px-3 py-3 text-right font-bold">{t("Wynik")}</th>
               </tr>
             </thead>
             <tbody>
@@ -133,7 +137,7 @@ export default function ContestResultsView({
                     <td className="px-3 py-3 text-gray-400 hidden sm:table-cell">{competitor.club}</td>
                     <td className="px-3 py-3 hidden md:table-cell">
                       <span className="inline-block px-2 py-0.5 bg-gray-700 text-gray-300 rounded-full text-xs">
-                        {competitor.category}
+                        {t(competitor.category)}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right font-bold tabular-nums text-white">

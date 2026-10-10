@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Competitor, sortCategories } from "./results-types";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   tabData: Record<string, Competitor[]>;
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export default function StaticResultsView({ tabData, activeCategory, onCategoryChange }: Props) {
+  const t = useT();
   const nonEmptyCategories = useMemo(
     () => sortCategories(Object.keys(tabData).filter((c) => tabData[c].length > 0)),
     [tabData]
@@ -31,24 +33,24 @@ export default function StaticResultsView({ tabData, activeCategory, onCategoryC
                   : "bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
               }`}
             >
-              {cat}
+              {t(cat)}
             </button>
           ))}
         </div>
       )}
 
       {rows.length === 0 ? (
-        <p className="text-center text-gray-500 mt-12">Brak wyników</p>
+        <p className="text-center text-gray-500 mt-12">{t("Brak wyników")}</p>
       ) : (
         <div className="overflow-x-auto rounded-xl shadow">
           <table className="w-full text-sm bg-gray-900">
             <thead>
               <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-                <th className="px-3 py-3 text-center w-10">Miejsce</th>
-                <th className="px-3 py-3 text-left">Zawodnik</th>
-                <th className="px-3 py-3 text-left hidden sm:table-cell">Klub</th>
-                <th className="px-3 py-3 text-left hidden md:table-cell">Kategoria</th>
-                <th className="px-3 py-3 text-right font-bold">Suma</th>
+                <th className="px-3 py-3 text-center w-10">{t("Miejsce")}</th>
+                <th className="px-3 py-3 text-left">{t("Zawodnik")}</th>
+                <th className="px-3 py-3 text-left hidden sm:table-cell">{t("Klub")}</th>
+                <th className="px-3 py-3 text-left hidden md:table-cell">{t("Kategoria")}</th>
+                <th className="px-3 py-3 text-right font-bold">{t("Suma")}</th>
               </tr>
             </thead>
             <tbody>
@@ -64,7 +66,7 @@ export default function StaticResultsView({ tabData, activeCategory, onCategoryC
                   <td className="px-3 py-3 text-gray-400 hidden sm:table-cell">{competitor.club}</td>
                   <td className="px-3 py-3 hidden md:table-cell">
                     <span className="inline-block px-2 py-0.5 bg-gray-700 text-gray-300 rounded-full text-xs">
-                      {competitor.category}
+                      {t(competitor.category)}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-right font-bold tabular-nums text-white">
