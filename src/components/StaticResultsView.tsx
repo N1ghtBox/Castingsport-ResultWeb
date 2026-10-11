@@ -50,7 +50,7 @@ export default function StaticResultsView({ tab, tabData, activeCategory, onCate
           <table className="w-full text-sm bg-gray-900">
             <thead>
               <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-                <th className="col-place py-3 text-center">{t("Miejsce")}</th>
+                <th className="px-3 py-3 text-center w-10">{t("Miejsce")}</th>
                 <th className="col-name py-3 text-left">{t("Zawodnik")}</th>
                 <th className="px-3 py-3 text-left hidden sm:table-cell">{t("Klub")}</th>
                 <th className="px-3 py-3 text-left hidden md:table-cell">{t("Kategoria")}</th>
@@ -70,7 +70,7 @@ export default function StaticResultsView({ tab, tabData, activeCategory, onCate
                     i % 2 === 0 ? "bg-gray-900" : "bg-[#111827]"
                   }`}
                 >
-                  <td className="col-place py-3 text-center text-gray-400">{competitor.place}</td>
+                  <td className="px-3 py-3 text-center text-gray-400">{competitor.place}</td>
                   <td className="col-name py-3 font-medium text-white">{competitor.name}</td>
                   <td className="px-3 py-3 text-gray-400 hidden sm:table-cell">{competitor.club}</td>
                   <td className="px-3 py-3 hidden md:table-cell">
