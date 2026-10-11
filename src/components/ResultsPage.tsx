@@ -13,8 +13,11 @@ import {
   isStaticResultKey,
   contestNum,
   firstNonEmpty,
+  TeamsData,
+  TEAMS_TAB,
 } from "./results-types";
 import StaticResultsView from "./StaticResultsView";
+import TeamResultsView from "./TeamResultsView";
 import ContestResultsView, { buildContestTabData } from "./ContestResultsView";
 
 export type { Competitor, ResultsData, CompetitionDoc } from "./results-types";
@@ -31,6 +34,14 @@ export default function ResultsPage({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setDrawerOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawerOpen]);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -73,10 +84,23 @@ export default function ResultsPage({ id }: { id: string }) {
     return [...keys].sort((a, b) => contestNum(a) - contestNum(b));
   }, [results]);
 
+  const teams: TeamsData = useMemo(() => data?.teams ?? {}, [data]);
+  const hasTeams = Object.values(teams).some((list) => list.length > 0);
+
   const tabs = useMemo(
-    () => [...TAB_ORDER.filter((k) => k in results), ...contestKeys],
-    [results, contestKeys]
+    () => [
+      ...TAB_ORDER.filter((k) => k in results),
+      ...(hasTeams ? [TEAMS_TAB] : []),
+      ...contestKeys,
+    ],
+    [results, hasTeams, contestKeys]
   );
+
+  function getTabData(tab: string): Record<string, unknown[]> {
+    if (tab === TEAMS_TAB) return teams;
+    if (/^contest-\d+$/.test(tab)) return buildContestTabData(results, tab);
+    return results[tab] ?? {};
+  }
 
   useEffect(() => {
     if (tabs.length === 0) return;
@@ -86,9 +110,7 @@ export default function ResultsPage({ id }: { id: string }) {
       const urlTab = searchParams.get("tab") ?? "";
       const urlCategory = searchParams.get("category") ?? "";
       const tabToUse = urlTab && tabs.includes(urlTab) ? urlTab : tabs[0];
-      const tabData = /^contest-\d+$/.test(tabToUse)
-        ? buildContestTabData(results, tabToUse)
-        : (results[tabToUse] ?? {});
+      const tabData = getTabData(tabToUse);
       const catToUse =
         urlCategory && urlCategory in tabData
           ? urlCategory
@@ -101,13 +123,10 @@ export default function ResultsPage({ id }: { id: string }) {
     setActiveTab((prev) => {
       if (prev && tabs.includes(prev)) return prev;
       const first = tabs[0];
-      const firstTabData = /^contest-\d+$/.test(first)
-        ? buildContestTabData(results, first)
-        : (results[first] ?? {});
-      setActiveCategory(firstNonEmpty(firstTabData));
+      setActiveCategory(firstNonEmpty(getTabData(first)));
       return first;
     });
-  }, [tabs, results]);
+  }, [tabs, results, teams]);
 
   function syncUrl(tab: string, category: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -118,10 +137,7 @@ export default function ResultsPage({ id }: { id: string }) {
 
   function handleTabChange(tab: string) {
     setActiveTab(tab);
-    const nextTabData = /^contest-\d+$/.test(tab)
-      ? buildContestTabData(results, tab)
-      : (results[tab] ?? {});
-    const cat = firstNonEmpty(nextTabData);
+    const cat = firstNonEmpty(getTabData(tab));
     setActiveCategory(cat);
     syncUrl(tab, cat);
   }
@@ -166,30 +182,78 @@ export default function ResultsPage({ id }: { id: string }) {
         )}
       </div>
 
-      <div className="flex flex-col gap-2 mb-6">
+      <button
+        onClick={() => setDrawerOpen(true)}
+        className="mb-6 flex items-center gap-3 px-4 py-2 rounded-full bg-gray-800 border border-gray-700 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden>
+          <path d="M2 4h12M2 8h12M2 12h12" />
+        </svg>
+        {t(activeTab)}
+      </button>
+
+      <div
+        onClick={() => setDrawerOpen(false)}
+        className={`fixed inset-0 z-40 bg-black/60 transition-opacity ${
+          drawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      />
+      <aside
+        aria-hidden={!drawerOpen}
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-gray-900 border-r border-gray-800 p-4 overflow-y-auto scrollbar-thin transition-transform ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setDrawerOpen(false)}
+            aria-label={t("Zamknij")}
+            className="text-gray-400 hover:text-white text-xl leading-none px-2"
+          >
+            ×
+          </button>
+        </div>
         {[
-          TAB_ORDER.filter((k) => k in results),
-          contestKeys,
-        ].filter((group) => group.length > 0).map((group, gi) => (
-          <div key={gi} className="flex flex-wrap gap-2">
-            {group.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => handleTabChange(tab)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? "bg-blue-500 text-white shadow"
-                    : "bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700"
-                }`}
-              >
-                {t(tab)}
-              </button>
-            ))}
+          {
+            label: "Wieloboje",
+            items: [...TAB_ORDER.filter((k) => k in results), ...(hasTeams ? [TEAMS_TAB] : [])],
+          },
+          { label: "Konkurencje", items: contestKeys },
+        ].filter((group) => group.items.length > 0).map((group) => (
+          <div key={group.label} className="mb-5">
+            <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              {t(group.label)}
+            </p>
+            <div className="flex flex-col gap-1">
+              {group.items.map((tab) => (
+                <button
+                  key={tab}
+                  tabIndex={drawerOpen ? 0 : -1}
+                  onClick={() => {
+                    handleTabChange(tab);
+                    setDrawerOpen(false);
+                  }}
+                  className={`text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === tab
+                      ? "bg-blue-500 text-white"
+                      : "text-gray-300 hover:bg-gray-800"
+                  }`}
+                >
+                  {t(tab)}
+                </button>
+              ))}
+            </div>
           </div>
         ))}
-      </div>
+      </aside>
 
-      {isContestTab ? (
+      {activeTab === TEAMS_TAB ? (
+        <TeamResultsView
+          teams={teams}
+          activeCategory={activeCategory}
+          onCategoryChange={handleCategoryChange}
+        />
+      ) : isContestTab ? (
         <ContestResultsView
           results={results}
           contestKey={activeTab}
@@ -198,6 +262,7 @@ export default function ResultsPage({ id }: { id: string }) {
         />
       ) : (
         <StaticResultsView
+          tab={activeTab}
           tabData={results[activeTab] ?? {}}
           activeCategory={activeCategory}
           onCategoryChange={handleCategoryChange}

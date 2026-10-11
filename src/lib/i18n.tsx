@@ -17,6 +17,16 @@ const DICT: Record<string, Record<string, string>> = {
     "Ładowanie wyników…": "Loading results…",
     "Nie znaleziono zawodów.": "Competition not found.",
     "Brak wyników": "No results",
+    "Wieloboje": "Combined events",
+    "Konkurencje": "Events",
+    "Zamknij": "Close",
+    "Drużyna": "Team",
+    "Zawodnicy": "Members",
+    "teams": "Teams",
+    // team categories
+    "Młodzieży": "Youth",
+    "Seniorów": "Seniors",
+    "Kobiet": "Women",
     // table
     "Miejsce": "Place",
     "Zawodnik": "Competitor",
@@ -25,10 +35,10 @@ const DICT: Record<string, Record<string, string>> = {
     "Suma": "Total",
     "Wynik": "Score",
     // tabs
-    "3boj": "3-event",
-    "5boj": "5-event",
-    "7boj": "7-event",
-    "9boj": "9-event",
+    "3boj": "Triathlon",
+    "5boj": "Pentathlon",
+    "7boj": "Heptathlon",
+    "9boj": "Allround",
     "multi": "Multi",
     "distance": "Distance",
     "contest-1": "Fly accuracy",
@@ -55,8 +65,9 @@ const PL_LABELS: Record<string, string> = {
   "5boj": "5-bój",
   "7boj": "7-bój",
   "9boj": "9-bój",
-  multi: "Multi",
-  distance: "Odległość",
+  multi: "2-bój multi",
+  distance: "2-bój odległościowy",
+  teams: "Drużyny",
   "contest-1": "Mucha cel",
   "contest-2": "Mucha odległość",
   "contest-3": "Arenberg",
@@ -73,7 +84,7 @@ type Lang = (typeof LANGS)[number];
 
 const Ctx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({
   lang: "pl",
-  setLang: () => {},
+  setLang: () => { },
 });
 
 export function LangProvider({ children }: { children: React.ReactNode }) {
@@ -106,11 +117,10 @@ export function LangSwitcher() {
         <button
           key={l}
           onClick={() => setLang(l)}
-          className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase transition-colors ${
-            lang === l
-              ? "bg-blue-500 text-white"
-              : "text-gray-400 hover:text-white"
-          }`}
+          className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase transition-colors ${lang === l
+            ? "bg-blue-500 text-white"
+            : "text-gray-400 hover:text-white"
+            }`}
         >
           {l}
         </button>

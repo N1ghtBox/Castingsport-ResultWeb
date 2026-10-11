@@ -1,16 +1,17 @@
 "use client";
 
 import { useMemo } from "react";
-import { Competitor, sortCategories } from "./results-types";
+import { Competitor, sortCategories, TAB_CONTESTS } from "./results-types";
 import { useT } from "@/lib/i18n";
 
 type Props = {
+  tab: string;
   tabData: Record<string, Competitor[]>;
   activeCategory: string;
   onCategoryChange: (cat: string) => void;
 };
 
-export default function StaticResultsView({ tabData, activeCategory, onCategoryChange }: Props) {
+export default function StaticResultsView({ tab, tabData, activeCategory, onCategoryChange }: Props) {
   const t = useT();
   const nonEmptyCategories = useMemo(
     () => sortCategories(Object.keys(tabData).filter((c) => tabData[c].length > 0)),
@@ -18,6 +19,7 @@ export default function StaticResultsView({ tabData, activeCategory, onCategoryC
   );
 
   const rows = useMemo(() => tabData[activeCategory] ?? [], [tabData, activeCategory]);
+  const contestKeys = TAB_CONTESTS[tab] ?? [];
 
   return (
     <>
@@ -50,6 +52,11 @@ export default function StaticResultsView({ tabData, activeCategory, onCategoryC
                 <th className="px-3 py-3 text-left">{t("Zawodnik")}</th>
                 <th className="px-3 py-3 text-left hidden sm:table-cell">{t("Klub")}</th>
                 <th className="px-3 py-3 text-left hidden md:table-cell">{t("Kategoria")}</th>
+                {contestKeys.map((k) => (
+                  <th key={k} className="px-3 py-3 text-right font-medium normal-case hidden lg:table-cell">
+                    {t(k)}
+                  </th>
+                ))}
                 <th className="px-3 py-3 text-right font-bold">{t("Suma")}</th>
               </tr>
             </thead>
@@ -69,6 +76,11 @@ export default function StaticResultsView({ tabData, activeCategory, onCategoryC
                       {t(competitor.category)}
                     </span>
                   </td>
+                  {contestKeys.map((k) => (
+                    <td key={k} className="px-3 py-3 text-right tabular-nums text-gray-300 whitespace-nowrap hidden lg:table-cell">
+                      {competitor[k] ?? "—"}
+                    </td>
+                  ))}
                   <td className="px-3 py-3 text-right font-bold tabular-nums text-white">
                     {competitor.total.toFixed(2)}
                   </td>
