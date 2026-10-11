@@ -1,14 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { Competitor, ResultsData, sortCategories } from "./results-types";
 import { useT } from "@/lib/i18n";
-
-import {
-  TIME_CONTESTS as SINGLE_SCORE_CONTESTS,
-  DOUBLE_CONTESTS as DOUBLE_SCORE_CONTESTS,
-  DISTANCE_CONTESTS as DISTANCE_SCORE_CONTESTS,
-} from "./competition-adapter";
+import type { Competitor, ResultsData } from "@/lib/results/types";
+import { contestNum, contestScore, sortCategories, thlonForContest } from "@/lib/results/utils";
 
 type Props = {
   results: ResultsData;
@@ -17,58 +12,20 @@ type Props = {
   onCategoryChange: (cat: string) => void;
 };
 
-function getBoj(contestId: number): keyof ResultsData {
-  // pick the tab that contains every competitor of the contest
-  if (contestId > 7) return 'multi'
-  if (contestId > 5) return 'distance'
-  if (contestId < 3) return '5boj'
-  return '3boj'
-}
-
-function getTotalScore(competitor: Competitor, contestId: string): number {
-  const [_, id] = contestId.split('-')
-
-  if (Number.isNaN(Number(id))) return 0;
-  if (SINGLE_SCORE_CONTESTS.includes(Number(id))) {
-    if (Number.isNaN(Number(competitor[contestId]))) return 0;
-    return Number(competitor[contestId])
-  }
-  if (DOUBLE_SCORE_CONTESTS.includes(Number(id))) {
-    const [first, second] = competitor[contestId].toString().split(' ')
-
-    if (Number.isNaN(Number(first))) return 0;
-    if (Number.isNaN(Number(second))) return 0;
-
-    return Number(first) + Number(second);
-  }
-  if (DISTANCE_SCORE_CONTESTS.includes(Number(id))) {
-    const [_, second] = competitor[contestId].toString().split(' ')
-
-    if (Number.isNaN(Number(second))) return 0;
-
-    return Number(second);
-  }
-  return 0;
-}
-
+// Competitors who took part in the contest, by category, best score first
 export function buildContestTabData(
   results: ResultsData,
   contestKey: string
 ): Record<string, Competitor[]> {
   const byCategory: Record<string, Competitor[]> = {};
-  const id = Number.parseInt(contestKey[contestKey.length - 1])
-  const tabData = results[getBoj(id)] ?? {}
-  for (const [cat, comps] of Object.entries(tabData)) {
-    const withScore = comps.filter((c) => contestKey in c);
-    if (withScore.length === 0) continue;
-    if (!byCategory[cat]) byCategory[cat] = [];
-    byCategory[cat].push(...withScore);
+  const thlon = results[thlonForContest(contestNum(contestKey))] ?? {};
+
+  for (const [category, competitors] of Object.entries(thlon)) {
+    const tookPart = competitors.filter((c) => contestKey in c);
+    if (tookPart.length === 0) continue;
+    byCategory[category] = tookPart.sort((a, b) => contestScore(b, contestKey) - contestScore(a, contestKey));
   }
-  for (const cat of Object.keys(byCategory)) {
-    byCategory[cat].sort(
-      (a, b) => (b[contestKey] as number) - (a[contestKey] as number)
-    );
-  }
+
   return byCategory;
 }
 
@@ -89,8 +46,7 @@ export default function ContestResultsView({
     [tabData]
   );
 
-  const rows = useMemo(() => tabData[activeCategory].sort((a, b) =>
-    getTotalScore(b, contestKey) - getTotalScore(a, contestKey)) ?? [], [tabData, activeCategory]);
+  const rows = tabData[activeCategory] ?? [];
 
   return (
     <>
@@ -118,8 +74,8 @@ export default function ContestResultsView({
           <table className="w-full text-sm bg-gray-900">
             <thead>
               <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-                <th className="px-3 py-3 text-center w-10">{t("Miejsce")}</th>
-                <th className="px-3 py-3 text-left">{t("Zawodnik")}</th>
+                <th className="col-place py-3 text-center">{t("Miejsce")}</th>
+                <th className="col-name py-3 text-left">{t("Zawodnik")}</th>
                 <th className="px-3 py-3 text-left hidden sm:table-cell">{t("Klub")}</th>
                 <th className="px-3 py-3 text-left hidden md:table-cell">{t("Kategoria")}</th>
                 <th className="px-3 py-3 text-right font-bold">{t("Wynik")}</th>
@@ -134,8 +90,8 @@ export default function ContestResultsView({
                     className={`border-t border-gray-800 transition-colors hover:bg-gray-800 ${i % 2 === 0 ? "bg-gray-900" : "bg-[#111827]"
                       }`}
                   >
-                    <td className="px-3 py-3 text-center text-gray-400">{i + 1}</td>
-                    <td className="px-3 py-3 font-medium text-white">{competitor.name}</td>
+                    <td className="col-place py-3 text-center text-gray-400">{i + 1}</td>
+                    <td className="col-name py-3 font-medium text-white">{competitor.name}</td>
                     <td className="px-3 py-3 text-gray-400 hidden sm:table-cell">{competitor.club}</td>
                     <td className="px-3 py-3 hidden md:table-cell">
                       <span className="inline-block px-2 py-0.5 bg-gray-700 text-gray-300 rounded-full text-xs">

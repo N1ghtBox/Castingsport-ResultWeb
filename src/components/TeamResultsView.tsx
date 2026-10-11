@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { TeamsData, TEAM_CATEGORY_ORDER, sortCategories } from "./results-types";
+import { TEAM_CATEGORY_ORDER } from "@/lib/results/constants";
+import type { TeamsData } from "@/lib/results/types";
+import { sortCategories } from "@/lib/results/utils";
 import { useT } from "@/lib/i18n";
 
 type Props = {
@@ -46,8 +48,8 @@ export default function TeamResultsView({ teams, activeCategory, onCategoryChang
           <table className="w-full text-sm bg-gray-900">
             <thead>
               <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-                <th className="px-3 py-3 text-center w-10">{t("Miejsce")}</th>
-                <th className="px-3 py-3 text-left">{t("Drużyna")}</th>
+                <th className="col-place py-3 text-center">{t("Miejsce")}</th>
+                <th className="col-name py-3 text-left">{t("Drużyna")}</th>
                 <th className="px-3 py-3 text-left hidden md:table-cell">{t("Zawodnicy")}</th>
                 <th className="px-3 py-3 text-right font-bold">{t("Suma")}</th>
               </tr>
@@ -71,8 +73,8 @@ export default function TeamResultsView({ teams, activeCategory, onCategoryChang
                       i % 2 === 0 ? "bg-gray-900" : "bg-[#111827]"
                     }`}
                   >
-                    <td className="px-3 py-3 text-center text-gray-400">{team.place}</td>
-                    <td className="px-3 py-3">
+                    <td className="col-place py-3 text-center text-gray-400">{team.place}</td>
+                    <td className="col-name py-3">
                       <p className="font-medium text-white">{team.name}</p>
                       <div className="mt-1 md:hidden">{members}</div>
                     </td>

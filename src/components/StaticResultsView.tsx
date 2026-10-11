@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { Competitor, sortCategories, TAB_CONTESTS } from "./results-types";
+import { TAB_CONTESTS } from "@/lib/results/constants";
+import type { Competitor } from "@/lib/results/types";
+import { sortCategories } from "@/lib/results/utils";
 import { useT } from "@/lib/i18n";
 
 type Props = {
@@ -48,8 +50,8 @@ export default function StaticResultsView({ tab, tabData, activeCategory, onCate
           <table className="w-full text-sm bg-gray-900">
             <thead>
               <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-                <th className="px-3 py-3 text-center w-10">{t("Miejsce")}</th>
-                <th className="px-3 py-3 text-left">{t("Zawodnik")}</th>
+                <th className="col-place py-3 text-center">{t("Miejsce")}</th>
+                <th className="col-name py-3 text-left">{t("Zawodnik")}</th>
                 <th className="px-3 py-3 text-left hidden sm:table-cell">{t("Klub")}</th>
                 <th className="px-3 py-3 text-left hidden md:table-cell">{t("Kategoria")}</th>
                 {contestKeys.map((k) => (
@@ -68,8 +70,8 @@ export default function StaticResultsView({ tab, tabData, activeCategory, onCate
                     i % 2 === 0 ? "bg-gray-900" : "bg-[#111827]"
                   }`}
                 >
-                  <td className="px-3 py-3 text-center text-gray-400">{competitor.place}</td>
-                  <td className="px-3 py-3 font-medium text-white">{competitor.name}</td>
+                  <td className="col-place py-3 text-center text-gray-400">{competitor.place}</td>
+                  <td className="col-name py-3 font-medium text-white">{competitor.name}</td>
                   <td className="px-3 py-3 text-gray-400 hidden sm:table-cell">{competitor.club}</td>
                   <td className="px-3 py-3 hidden md:table-cell">
                     <span className="inline-block px-2 py-0.5 bg-gray-700 text-gray-300 rounded-full text-xs">

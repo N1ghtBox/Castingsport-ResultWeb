@@ -1,7 +1,9 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
-import { SerieEntry, sortCategories, TEAM_CATEGORY_ORDER } from "./results-types";
+import { TEAM_CATEGORY_ORDER } from "@/lib/results/constants";
+import type { SerieEntry } from "@/lib/results/types";
+import { sortCategories } from "@/lib/results/utils";
 import { useT } from "@/lib/i18n";
 
 type Props = {
@@ -52,8 +54,8 @@ export default function SeriesResultsView({ tabData, competitions, isTeams, acti
           <table className="w-full text-sm bg-gray-900">
             <thead>
               <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-                <th rowSpan={2} className="px-3 py-3 text-center w-10">{t("Miejsce")}</th>
-                <th rowSpan={2} className="px-3 py-3 text-left">{t(isTeams ? "Drużyna" : "Zawodnik")}</th>
+                <th rowSpan={2} className="col-place py-3 text-center">{t("Miejsce")}</th>
+                <th rowSpan={2} className="col-name py-3 text-left">{t(isTeams ? "Drużyna" : "Zawodnik")}</th>
                 {!isTeams && (
                   <>
                     <th rowSpan={2} className="px-3 py-3 text-left hidden sm:table-cell">{t("Klub")}</th>
@@ -89,8 +91,8 @@ export default function SeriesResultsView({ tabData, competitions, isTeams, acti
                     i % 2 === 0 ? "bg-gray-900" : "bg-[#111827]"
                   }`}
                 >
-                  <td className="px-3 py-3 text-center text-gray-400">{row.seriePlace}</td>
-                  <td className="px-3 py-3 font-medium text-white">{row.name}</td>
+                  <td className="col-place py-3 text-center text-gray-400">{row.seriePlace}</td>
+                  <td className="col-name py-3 font-medium text-white">{row.name}</td>
                   {!isTeams && (
                     <>
                       <td className="px-3 py-3 text-gray-400 hidden sm:table-cell">{row.club}</td>

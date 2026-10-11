@@ -6,7 +6,28 @@ import { LangSwitcher, useT } from "@/lib/i18n";
 export default function FooterSettings() {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const [allColumns, setAllColumns] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // read after mount so SSR and first client render match
+  useEffect(() => {
+    try {
+      setAllColumns(localStorage.getItem("allColumns") === "1");
+    } catch {}
+  }, []);
+
+  function toggleAllColumns() {
+    const next = !allColumns;
+    setAllColumns(next);
+    try {
+      localStorage.setItem("allColumns", next ? "1" : "0");
+    } catch {}
+  }
+
+  // globals.css un-hides the narrow-screen columns while this attribute is set
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-all-columns", allColumns);
+  }, [allColumns]);
 
   // close on outside click / Escape
   useEffect(() => {
@@ -43,6 +64,19 @@ export default function FooterSettings() {
             <span className="text-gray-400 text-xs">{t("Język")}</span>
             <LangSwitcher />
           </div>
+          <label className="mt-3 flex items-center justify-between gap-2 cursor-pointer">
+            <span className="text-gray-400 text-xs">{t("Wszystkie kolumny")}</span>
+            <button
+              role="switch"
+              aria-checked={allColumns}
+              onClick={toggleAllColumns}
+              className={`relative w-9 h-5 rounded-full border border-gray-800 transition-colors ${allColumns ? "bg-blue-500" : "bg-gray-950"}`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${allColumns ? "translate-x-4" : ""}`}
+              />
+            </button>
+          </label>
         </div>
       )}
     </div>

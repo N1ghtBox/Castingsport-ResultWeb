@@ -6,23 +6,14 @@ import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useT } from "@/lib/i18n";
 import Link from "next/link";
-import {
-  CompetitionDoc,
-  ResultsData,
-  TAB_ORDER,
-  isStaticResultKey,
-  contestNum,
-  firstNonEmpty,
-  TeamsData,
-  TEAMS_TAB,
-} from "./results-types";
+import { normalizeCompetitionDoc } from "@/lib/adapters/competition";
+import { TAB_ORDER, TEAMS_TAB } from "@/lib/results/constants";
+import type { CompetitionDoc, ResultsData, TeamsData } from "@/lib/results/types";
+import { contestNum, firstNonEmpty, isContestKey, isThlonKey } from "@/lib/results/utils";
 import StaticResultsView from "./StaticResultsView";
 import TeamResultsView from "./TeamResultsView";
 import ContestResultsView, { buildContestTabData } from "./ContestResultsView";
 import TabDrawer from "./TabDrawer";
-import { normalizeCompetitionDoc } from "./competition-adapter";
-
-export type { Competitor, ResultsData, CompetitionDoc } from "./results-types";
 
 export default function ResultsPage({ id }: { id: string }) {
   const t = useT();
@@ -69,7 +60,7 @@ export default function ResultsPage({ id }: { id: string }) {
   const results: ResultsData = useMemo(() => {
     if (!data) return {};
     return Object.fromEntries(
-      Object.entries(data).filter(([k]) => isStaticResultKey(k))
+      Object.entries(data).filter(([k]) => isThlonKey(k))
     ) as ResultsData;
   }, [data]);
 
@@ -79,7 +70,7 @@ export default function ResultsPage({ id }: { id: string }) {
       for (const comps of Object.values(tabData)) {
         for (const c of comps) {
           for (const k of Object.keys(c)) {
-            if (/^contest-\d+$/.test(k)) keys.add(k);
+            if (isContestKey(k)) keys.add(k);
           }
         }
       }
@@ -101,7 +92,7 @@ export default function ResultsPage({ id }: { id: string }) {
 
   function getTabData(tab: string): Record<string, unknown[]> {
     if (tab === TEAMS_TAB) return teams;
-    if (/^contest-\d+$/.test(tab)) return buildContestTabData(results, tab);
+    if (isContestKey(tab)) return buildContestTabData(results, tab);
     return results[tab] ?? {};
   }
 
@@ -166,7 +157,7 @@ export default function ResultsPage({ id }: { id: string }) {
     );
   }
 
-  const isContestTab = /^contest-\d+$/.test(activeTab);
+  const isContestTab = isContestKey(activeTab);
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-8">

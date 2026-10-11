@@ -5,6 +5,8 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useT } from "@/lib/i18n";
 import Link from "next/link";
+import { normalizeCompetitionDoc } from "@/lib/adapters/competition";
+import { dateSortKey, dateYear, isThlonKey } from "@/lib/results/utils";
 
 type CompetitionMeta = {
   id: string;
@@ -15,26 +17,6 @@ type CompetitionMeta = {
 };
 
 type SerieMeta = { id: string; name?: string; year?: number; type?: string; competitionIds: string[] };
-
-const RESULT_KEYS = new Set(["3boj", "5boj", "7boj", "9boj", "multi", "distance"]);
-
-// 3-char prefixes, matches both nominative (sierpień) and genitive (sierpnia) Polish forms.
-const MONTH_PREFIXES = ["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paź","lis","gru"];
-
-// Parse "10-12 sierpnia 2026" -> sortable timestamp. Missing/unparseable dates sort last.
-function dateSortKey(date?: string): number {
-  if (!date) return -Infinity;
-  const m = date.toLowerCase().match(/(\d+)(?:\s*-\s*\d+)?\s+([a-zżźćńółęąś]+)\s+(\d{4})/);
-  if (!m) return -Infinity;
-  const [, day, month, year] = m;
-  const mi = MONTH_PREFIXES.indexOf(month.slice(0, 3));
-  return new Date(Number(year), mi < 0 ? 0 : mi, Number(day)).getTime();
-}
-
-function dateYear(date?: string): string {
-  const m = date?.match(/(\d{4})/);
-  return m ? m[1] : "—";
-}
 
 // Newest year first, unknown ("—") last. Inputs are already sorted within a year.
 function yearGroups(competitions: CompetitionMeta[], series: SerieMeta[]) {
@@ -79,13 +61,12 @@ export default function CompetitionsGallery() {
       collection(db, "Competitions"),
       (snap) => {
         const data: CompetitionMeta[] = snap.docs.map((doc) => {
-          const d = doc.data();
+          const d = normalizeCompetitionDoc(doc.data());
           let participantCount = 0;
           let categoryCount = 0;
           for (const key of Object.keys(d)) {
-            if (!RESULT_KEYS.has(key)) continue;
-            const tab = d[key] as Record<string, unknown[]>;
-            for (const arr of Object.values(tab)) {
+            if (!isThlonKey(key)) continue;
+            for (const arr of Object.values(d[key])) {
               if (arr.length > 0) {
                 categoryCount++;
                 participantCount += arr.length;

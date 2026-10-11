@@ -24,6 +24,7 @@ const DICT: Record<string, Record<string, string>> = {
     // settings
     "Ustawienia": "Settings",
     "Język": "Language",
+    "Wszystkie kolumny": "All columns",
     // results page
     "Ładowanie wyników…": "Loading results…",
     "Nie znaleziono zawodów.": "Competition not found.",

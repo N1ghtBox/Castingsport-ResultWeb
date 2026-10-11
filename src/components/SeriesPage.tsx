@@ -6,7 +6,9 @@ import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useT } from "@/lib/i18n";
 import Link from "next/link";
-import { SerieDoc, SerieEntry, SERIE_TAB_ORDER, TEAMS_TAB, firstNonEmpty } from "./results-types";
+import { SERIE_TAB_ORDER, TEAMS_TAB } from "@/lib/results/constants";
+import type { SerieDoc, SerieEntry } from "@/lib/results/types";
+import { firstNonEmpty, hasResults } from "@/lib/results/utils";
 import TabDrawer from "./TabDrawer";
 import SeriesResultsView from "./SeriesResultsView";
 
@@ -59,14 +61,11 @@ export default function SeriesPage({ id }: { id: string }) {
     return () => { cancelled = true; };
   }, [idsKey]);
 
-  const nonEmpty = (d?: Record<string, SerieEntry[]>) =>
-    !!d && Object.values(d).some((list) => list.length > 0);
-
   const tabs = useMemo(() => {
     if (!data) return [];
     return [
-      ...SERIE_TAB_ORDER.filter((k) => nonEmpty(data[k])),
-      ...(nonEmpty(data.teams) ? [TEAMS_TAB] : []),
+      ...SERIE_TAB_ORDER.filter((k) => hasResults(data[k])),
+      ...(hasResults(data.teams) ? [TEAMS_TAB] : []),
     ];
   }, [data]);
 
