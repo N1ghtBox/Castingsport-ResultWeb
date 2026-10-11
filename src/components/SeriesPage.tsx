@@ -141,7 +141,7 @@ export default function SeriesPage({ id }: { id: string }) {
             <Link
               key={c.id}
               href={`/competition/${c.id}`}
-              className="px-3 py-1 rounded-full text-xs text-gray-400 border border-gray-800 hover:border-blue-500 hover:text-blue-400 transition-colors"
+              className="px-3 py-1 rounded-full text-xs text-blue-400 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 hover:border-blue-500 transition-colors"
             >
               {c.name}
             </Link>
