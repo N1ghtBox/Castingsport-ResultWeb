@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LangProvider } from "@/lib/i18n";
 import FooterSettings from "@/components/FooterSettings";
@@ -6,6 +6,16 @@ import FooterSettings from "@/components/FooterSettings";
 export const metadata: Metadata = {
   title: "Castingsport Wyniki",
   description: "Wyniki zawodów castingsport",
+  // iOS ignores most of the manifest, so the home-screen app is set up here too
+  appleWebApp: {
+    capable: true,
+    title: "Castingsport",
+    statusBarStyle: "black",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#030712", // gray-950: browser bar and installed app's title bar
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
