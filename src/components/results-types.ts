@@ -88,3 +88,36 @@ export function firstNonEmpty(tabData: Record<string, unknown[]>): string {
     ""
   );
 }
+
+// Series/{id}: written whole by the desktop app's "Sync to cloud".
+export type Placement = {
+  competitionName: string;
+  place: number;
+  score: number;
+};
+
+export type SerieEntry = {
+  id: string;
+  name: string;
+  club?: string; // contestants only
+  category: string;
+  placements: Placement[];
+  total: number;
+  place: number; // sum of placements' places ("Punkty")
+  seriePlace: number;
+};
+
+export type SerieDoc = {
+  name: string;
+  year: number;
+  type: "Puchar" | "Tury";
+  competitions: string[];
+  competitionIds: string[];
+  "5boj": Record<string, SerieEntry[]>;
+  "9boj": Record<string, SerieEntry[]>;
+  multi: Record<string, SerieEntry[]>;
+  distance: Record<string, SerieEntry[]>;
+  teams: Record<string, SerieEntry[]>;
+};
+
+export const SERIE_TAB_ORDER = ["5boj", "9boj", "multi", "distance"] as const;

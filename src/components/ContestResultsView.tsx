@@ -4,9 +4,11 @@ import { useMemo } from "react";
 import { Competitor, ResultsData, sortCategories } from "./results-types";
 import { useT } from "@/lib/i18n";
 
-const SINGLE_SCORE_CONTESTS = [1, 3, 4, 8]
-const DOUBLE_SCORE_CONTESTS = [2, 6]
-const DISTANCE_SCORE_CONTESTS = [5, 7, 9]
+import {
+  TIME_CONTESTS as SINGLE_SCORE_CONTESTS,
+  DOUBLE_CONTESTS as DOUBLE_SCORE_CONTESTS,
+  DISTANCE_CONTESTS as DISTANCE_SCORE_CONTESTS,
+} from "./competition-adapter";
 
 type Props = {
   results: ResultsData;

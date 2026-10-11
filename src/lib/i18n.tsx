@@ -8,11 +8,22 @@ const DICT: Record<string, Record<string, string>> = {
   pl: {},
   en: {
     // gallery
+    "Castingsport - wyniki": "Castingsport - results",
     "Zawody": "Competitions",
     "Ładowanie zawodów…": "Loading competitions…",
     "Wybierz zawody, aby zobaczyć wyniki": "Pick a competition to see results",
     "Brak zawodów": "No competitions",
     "Błąd": "Error",
+    // series
+    "Serie": "Series",
+    "Nie znaleziono serii.": "Series not found.",
+    "Puchar": "Cup",
+    "Tury": "Rounds",
+    "Łączny wynik": "Total score",
+    "Punkty": "Points",
+    // settings
+    "Ustawienia": "Settings",
+    "Język": "Language",
     // results page
     "Ładowanie wyników…": "Loading results…",
     "Nie znaleziono zawodów.": "Competition not found.",
@@ -52,9 +63,9 @@ const DICT: Record<string, Record<string, string>> = {
     "contest-9": "Multi distance",
     // categories (values come from Firestore)
     "Kadet": "Cadet",
-    "Junior": "Junior",
-    "Juniorka": "Junior woman",
-    "Mężczyzna": "Man",
+    "Junior": "Boys",
+    "Juniorka": "Girls",
+    "Mężczyzna": "Men",
     "Kobieta": "Woman",
   },
 };
@@ -112,7 +123,7 @@ export function useT() {
 export function LangSwitcher() {
   const { lang, setLang } = useContext(Ctx);
   return (
-    <div className="fixed top-3 right-3 z-50 flex gap-1 rounded-full bg-gray-900/90 border border-gray-800 p-1 backdrop-blur">
+    <div className="flex gap-1 rounded-full bg-gray-950 border border-gray-800 p-1">
       {LANGS.map((l) => (
         <button
           key={l}

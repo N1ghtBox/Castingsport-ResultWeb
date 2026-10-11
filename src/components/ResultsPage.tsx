@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useT } from "@/lib/i18n";
 import Link from "next/link";
@@ -19,6 +19,8 @@ import {
 import StaticResultsView from "./StaticResultsView";
 import TeamResultsView from "./TeamResultsView";
 import ContestResultsView, { buildContestTabData } from "./ContestResultsView";
+import TabDrawer from "./TabDrawer";
+import { normalizeCompetitionDoc } from "./competition-adapter";
 
 export type { Competitor, ResultsData, CompetitionDoc } from "./results-types";
 
@@ -34,14 +36,15 @@ export default function ResultsPage({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [series, setSeries] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    if (!drawerOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setDrawerOpen(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [drawerOpen]);
+    return onSnapshot(
+      query(collection(db, "Series"), where("competitionIds", "array-contains", id)),
+      (snap) => setSeries(snap.docs.map((d) => ({ id: d.id, name: d.data().name ?? d.id }))),
+      (err) => console.error("Series:", err)
+    );
+  }, [id]);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -52,7 +55,7 @@ export default function ResultsPage({ id }: { id: string }) {
           setLoading(false);
           return;
         }
-        setData(snap.data() as CompetitionDoc);
+        setData(normalizeCompetitionDoc(snap.data()));
         setLoading(false);
       },
       (err) => {
@@ -167,7 +170,7 @@ export default function ResultsPage({ id }: { id: string }) {
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-8">
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-6 flex items-center gap-3 flex-wrap">
         <Link
           href="/"
           className="text-gray-400 hover:text-white transition-colors text-sm"
@@ -177,75 +180,28 @@ export default function ResultsPage({ id }: { id: string }) {
         <h1 className="text-2xl font-bold tracking-tight text-white">
           {data?.name ?? id}
         </h1>
-        {data?.date && (
-          <span className="text-gray-500 text-sm">{data.date}</span>
-        )}
+        {series.map((s) => (
+          <Link
+            key={s.id}
+            href={`/series/${s.id}`}
+            className="px-2 py-0.5 rounded-full text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors"
+          >
+            {s.name}
+          </Link>
+        ))}
       </div>
 
-      <button
-        onClick={() => setDrawerOpen(true)}
-        className="mb-6 flex items-center gap-3 px-4 py-2 rounded-full bg-gray-800 border border-gray-700 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden>
-          <path d="M2 4h12M2 8h12M2 12h12" />
-        </svg>
-        {t(activeTab)}
-      </button>
-
-      <div
-        onClick={() => setDrawerOpen(false)}
-        className={`fixed inset-0 z-40 bg-black/60 transition-opacity ${
-          drawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-      />
-      <aside
-        aria-hidden={!drawerOpen}
-        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-gray-900 border-r border-gray-800 p-4 overflow-y-auto scrollbar-thin transition-transform ${
-          drawerOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={() => setDrawerOpen(false)}
-            aria-label={t("Zamknij")}
-            className="text-gray-400 hover:text-white text-xl leading-none px-2"
-          >
-            ×
-          </button>
-        </div>
-        {[
+      <TabDrawer
+        groups={[
           {
             label: "Wieloboje",
             items: [...TAB_ORDER.filter((k) => k in results), ...(hasTeams ? [TEAMS_TAB] : [])],
           },
           { label: "Konkurencje", items: contestKeys },
-        ].filter((group) => group.items.length > 0).map((group) => (
-          <div key={group.label} className="mb-5">
-            <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
-              {t(group.label)}
-            </p>
-            <div className="flex flex-col gap-1">
-              {group.items.map((tab) => (
-                <button
-                  key={tab}
-                  tabIndex={drawerOpen ? 0 : -1}
-                  onClick={() => {
-                    handleTabChange(tab);
-                    setDrawerOpen(false);
-                  }}
-                  className={`text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === tab
-                      ? "bg-blue-500 text-white"
-                      : "text-gray-300 hover:bg-gray-800"
-                  }`}
-                >
-                  {t(tab)}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </aside>
+        ]}
+        activeTab={activeTab}
+        onSelect={handleTabChange}
+      />
 
       {activeTab === TEAMS_TAB ? (
         <TeamResultsView
