@@ -68,7 +68,9 @@ export default function SeriesResultsView({ tabData, competitions, isTeams, acti
                     colSpan={2}
                     className="px-3 pt-3 pb-1 text-center font-medium normal-case border-l border-gray-700 hidden lg:table-cell"
                   >
-                    {c}
+                    {/* table cells ignore max-width, so the cap goes on a wrapper;
+                        whitespace-normal beats the "All columns" nowrap the cell passes down */}
+                    <div className="max-w-[200px] mx-auto whitespace-normal">{c}</div>
                   </th>
                 ))}
                 <th rowSpan={2} className="px-3 py-3 text-right">{t("Łączny wynik")}</th>
@@ -77,8 +79,8 @@ export default function SeriesResultsView({ tabData, competitions, isTeams, acti
               <tr className="bg-gray-800 text-gray-500 text-[10px] uppercase tracking-wide">
                 {competitions.map((c) => (
                   <Fragment key={c}>
-                    <th className="px-3 pb-2 text-right font-medium border-l border-gray-700 hidden lg:table-cell">{t("Miejsce")}</th>
-                    <th className="px-3 pb-2 text-right font-medium hidden lg:table-cell">{t("Wynik")}</th>
+                    <th className="px-3 pb-2 text-center font-medium border-l border-gray-700 hidden lg:table-cell">{t("Miejsce")}</th>
+                    <th className="px-3 pb-2 text-center font-medium hidden lg:table-cell">{t("Wynik")}</th>
                   </Fragment>
                 ))}
               </tr>
@@ -108,10 +110,10 @@ export default function SeriesResultsView({ tabData, competitions, isTeams, acti
                     const p = row.placements.find((pl) => pl.competitionName === c);
                     return (
                       <Fragment key={c}>
-                        <td className="px-3 py-3 text-right tabular-nums text-gray-400 border-l border-gray-800 hidden lg:table-cell">
+                        <td className="px-3 py-3 text-center tabular-nums text-gray-400 border-l border-gray-800 hidden lg:table-cell">
                           {p?.place ?? "—"}
                         </td>
-                        <td className="px-3 py-3 text-right tabular-nums text-gray-300 whitespace-nowrap hidden lg:table-cell">
+                        <td className="px-3 py-3 text-center tabular-nums text-gray-300 whitespace-nowrap hidden lg:table-cell">
                           {p ? (isTeams ? p.score.toFixed() : p.score.toFixed(2)) : "—"}
                         </td>
                       </Fragment>
