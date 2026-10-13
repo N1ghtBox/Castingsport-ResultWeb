@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { TAB_CONTESTS } from "@/lib/results/constants";
 import type { Competitor } from "@/lib/results/types";
-import { sortCategories } from "@/lib/results/utils";
+import { contestTime, sortCategories } from "@/lib/results/utils";
 import { useT } from "@/lib/i18n";
 
 type Props = {
@@ -80,7 +80,10 @@ export default function StaticResultsView({ tab, tabData, activeCategory, onCate
                   </td>
                   {contestKeys.map((k) => (
                     <td key={k} className="px-3 py-3 text-right tabular-nums text-gray-300 whitespace-nowrap hidden lg:table-cell">
-                      {competitor[k] ?? "—"}
+                      {/* times are shown only in the contest tabs */}
+                      {contestTime(competitor, k) === undefined
+                        ? competitor[k] ?? "—"
+                        : String(competitor[k]).split(" ")[0]}
                     </td>
                   ))}
                   <td className="px-3 py-3 text-right font-bold tabular-nums text-white">

@@ -11,7 +11,7 @@ export type Competitor = {
   isNew: boolean;
   total: number;
   place: number;
-  // "contest-N": formatted score, e.g. "95", "12.50 10.00" or "40 60.00"
+  // "contest-N": formatted score, e.g. "95", "95 01:23:450", "12.50 10.00" or "40 60.00"
   [key: string]: string | number | boolean;
 };
 
@@ -40,10 +40,27 @@ export type TeamsData = {
   [category: string]: TeamResult[];
 };
 
+export type FinalEntry = {
+  id: string;
+  name: string;
+  club: string;
+  place: number;
+  score: number; // points in timed contests, distance otherwise
+  time?: string; // timed contests only: "01:23:450", or "—" if missing
+};
+
+// "contest-N" -> category -> finalists by place
+export type FinalsData = {
+  [contestKey: string]: {
+    [category: string]: FinalEntry[];
+  };
+};
+
 export type CompetitionDoc = ResultsData & {
   name?: string;
   date?: string;
   teams?: TeamsData;
+  finals?: FinalsData;
 };
 
 // Series/{id}: written whole by the desktop app's "Sync to cloud".

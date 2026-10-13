@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n";
 import Link from "next/link";
 import { normalizeCompetitionDoc } from "@/lib/adapters/competition";
 import { TAB_ORDER, TEAMS_TAB } from "@/lib/results/constants";
-import type { CompetitionDoc, ResultsData, TeamsData } from "@/lib/results/types";
+import type { CompetitionDoc, FinalsData, ResultsData, TeamsData } from "@/lib/results/types";
 import { contestNum, firstNonEmpty, isContestKey, isThlonKey } from "@/lib/results/utils";
 import StaticResultsView from "./StaticResultsView";
 import TeamResultsView from "./TeamResultsView";
@@ -79,6 +79,7 @@ export default function ResultsPage({ id }: { id: string }) {
   }, [results]);
 
   const teams: TeamsData = useMemo(() => data?.teams ?? {}, [data]);
+  const finals: FinalsData = useMemo(() => data?.finals ?? {}, [data]);
   const hasTeams = Object.values(teams).some((list) => list.length > 0);
 
   const tabs = useMemo(
@@ -203,6 +204,7 @@ export default function ResultsPage({ id }: { id: string }) {
       ) : isContestTab ? (
         <ContestResultsView
           results={results}
+          finals={finals}
           contestKey={activeTab}
           activeCategory={activeCategory}
           onCategoryChange={handleCategoryChange}

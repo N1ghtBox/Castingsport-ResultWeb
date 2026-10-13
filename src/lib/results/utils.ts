@@ -40,6 +40,28 @@ export function contestScore(competitor: Competitor, contestKey: string): number
   return Number.isNaN(score) ? 0 : score;
 }
 
+// --- times ("01:23:450") ---
+
+const NO_TIME = "—";
+
+// Synced "MM.SS.mmm" -> printed "MM:SS:mmm"; empty -> dash
+export function formatTime(time: string): string {
+  return time ? time.replaceAll(".", ":") : NO_TIME;
+}
+
+// "01:23:450" -> 83.45; a missing time counts as 0
+export function timeToSeconds(time?: string): number {
+  if (!time || time === NO_TIME) return 0;
+  const [m = 0, s = 0, ms = 0] = time.split(/[.:]/).map(Number);
+  return m * 60 + s + ms / 1000;
+}
+
+// Time of a timed contest ("95 01:23:450" -> "01:23:450"); undefined in v1/v2 or other contests
+export function contestTime(competitor: Competitor, contestKey: string): string | undefined {
+  if (!TIME_CONTESTS.includes(contestNum(contestKey))) return undefined;
+  return String(competitor[contestKey] ?? "").split(" ")[1];
+}
+
 // --- categories ---
 
 // Known categories in the given order, unknown ones after them alphabetically

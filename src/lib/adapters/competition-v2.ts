@@ -1,10 +1,16 @@
 import { DISTANCE_MULTIPLIER, GIRL_CATEGORIES, TAB_ORDER, TIME_CONTESTS } from "@/lib/results/constants";
-import type { CompetitionDoc, Competitor, ResultsData, TeamsData } from "@/lib/results/types";
+import type { CompetitionDoc, Competitor, FinalsData, ResultsData, TeamsData } from "@/lib/results/types";
+import { formatTime } from "@/lib/results/utils";
 
-// Competitions/{id} v2, written by the desktop app's generateSyncData.
+// Competitions/{id} v2 and v3, written by the desktop app's generateSyncData.
 // Each contestant is stored once; rankings and team members point to them by id.
+// v3 adds the time to timed contests, and the finals.
 
-type V2Score = number | [number, number]; // [score, second_score] for double contests
+// number: single contests (and timed ones in v2); [score, second_score]: double contests;
+// [score, "MM.SS.mmm"]: timed contests in v3, "" when there is no time
+type V2Score = number | [number, number] | [number, string];
+
+type V3FinalEntry = { id: string; place: number; score: number; time?: string };
 
 type V2Contestant = {
   name: string;
@@ -23,16 +29,17 @@ type V2Team = {
 };
 
 export type V2CompetitionDoc = {
-  v: 2;
+  v: 2 | 3;
   name: string;
   date: string;
   contestants: Record<string, V2Contestant>;
   results: Record<string, Record<string, V2RankingEntry[]>>; // thlon -> category -> ranking
   teams: Record<string, V2Team[]>; // team category -> ranking
+  finals?: Record<string, Record<string, V3FinalEntry[]>>; // v3: contest number -> category -> by place
 };
 
 export function isV2(raw: Record<string, unknown>): raw is V2CompetitionDoc {
-  return raw.v === 2;
+  return raw.v === 2 || raw.v === 3;
 }
 
 // Converts a v2 document into the shape the views render
@@ -42,6 +49,7 @@ export function fromV2(doc: V2CompetitionDoc): CompetitionDoc {
     name: doc.name,
     date: doc.date,
     teams: toTeams(doc),
+    finals: toFinals(doc),
   } as CompetitionDoc;
 }
 
@@ -103,10 +111,35 @@ function toTeams(doc: V2CompetitionDoc): TeamsData {
   return teams;
 }
 
-// Same text the desktop app wrote in v1 (its getSyncFormatContestResults)
+function toFinals(doc: V2CompetitionDoc): FinalsData {
+  const finals: FinalsData = {};
+
+  for (const [contest, byCategory] of Object.entries(doc.finals ?? {})) {
+    const key = `contest-${contest}`;
+    finals[key] = {};
+    for (const [category, entries] of Object.entries(byCategory)) {
+      finals[key][category] = entries.map(({ id, place, score, time }) => ({
+        id,
+        name: doc.contestants[id]?.name ?? "",
+        club: doc.contestants[id]?.club ?? "",
+        place,
+        score,
+        time: TIME_CONTESTS.includes(Number(contest)) ? formatTime(time ?? "") : undefined,
+      }));
+    }
+  }
+
+  return finals;
+}
+
+// Same text the desktop app wrote in v1 (its getSyncFormatContestResults),
+// plus the time in v3 timed contests: "95 01:23:450"
 function formatScore(contest: number, score: V2Score): string {
+  if (Array.isArray(score) && typeof score[1] === "string") {
+    return `${score[0]} ${formatTime(score[1])}`;
+  }
   if (Array.isArray(score)) {
-    const [first, second] = score;
+    const [first, second] = score as [number, number];
     return `${first.toFixed(2)} ${second.toFixed(2)}`;
   }
   if (TIME_CONTESTS.includes(contest)) return String(score);

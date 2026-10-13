@@ -46,6 +46,8 @@ const DICT: Record<string, Record<string, string>> = {
     "Kategoria": "Category",
     "Suma": "Total",
     "Wynik": "Score",
+    "Czas": "Time",
+    "Finał": "Final",
     // tabs
     "3boj": "Triathlon",
     "5boj": "Pentathlon",
