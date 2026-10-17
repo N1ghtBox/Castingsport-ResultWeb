@@ -5,15 +5,17 @@ import { TAB_CONTESTS } from "@/lib/results/constants";
 import type { Competitor } from "@/lib/results/types";
 import { contestTime, sortCategories } from "@/lib/results/utils";
 import { useT } from "@/lib/i18n";
+import Nation from "./Nation";
 
 type Props = {
   tab: string;
   tabData: Record<string, Competitor[]>;
+  showNation: boolean;
   activeCategory: string;
   onCategoryChange: (cat: string) => void;
 };
 
-export default function StaticResultsView({ tab, tabData, activeCategory, onCategoryChange }: Props) {
+export default function StaticResultsView({ tab, tabData, showNation, activeCategory, onCategoryChange }: Props) {
   const t = useT();
   const nonEmptyCategories = useMemo(
     () => sortCategories(Object.keys(tabData).filter((c) => tabData[c].length > 0)),
@@ -52,6 +54,7 @@ export default function StaticResultsView({ tab, tabData, activeCategory, onCate
               <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
                 <th className="px-3 py-3 text-center w-10">{t("Miejsce")}</th>
                 <th className="col-name py-3 text-left">{t("Zawodnik")}</th>
+                {showNation && <th className="px-3 py-3 text-left">{t("Kraj")}</th>}
                 <th className="px-3 py-3 text-left hidden sm:table-cell">{t("Klub")}</th>
                 <th className="px-3 py-3 text-left hidden md:table-cell">{t("Kategoria")}</th>
                 {contestKeys.map((k) => (
@@ -72,6 +75,7 @@ export default function StaticResultsView({ tab, tabData, activeCategory, onCate
                 >
                   <td className="px-3 py-3 text-center text-gray-400">{competitor.place}</td>
                   <td className="col-name py-3 font-medium text-white">{competitor.name}</td>
+                  {showNation && <td className="px-3 py-3 text-gray-300 tabular-nums"><Nation code={competitor.nation} /></td>}
                   <td className="px-3 py-3 text-gray-400 hidden sm:table-cell">{competitor.club}</td>
                   <td className="px-3 py-3 hidden md:table-cell">
                     <span className="inline-block px-2 py-0.5 bg-gray-700 text-gray-300 rounded-full text-xs">

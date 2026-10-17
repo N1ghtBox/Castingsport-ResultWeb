@@ -4,7 +4,8 @@ import { formatTime } from "@/lib/results/utils";
 
 // Competitions/{id} v2 and v3, written by the desktop app's generateSyncData.
 // Each contestant is stored once; rankings and team members point to them by id.
-// v3 adds the time to timed contests, and the finals.
+// v3 adds the time to timed contests, the finals, isInternational, debugOnly and nations.
+// A v3 doc can also hold one subcategory of a competition (see lib/competitions.ts).
 
 // number: single contests (and timed ones in v2); [score, second_score]: double contests;
 // [score, "MM.SS.mmm"]: timed contests in v3, "" when there is no time
@@ -16,6 +17,7 @@ type V2Contestant = {
   name: string;
   club: string;
   number: number;
+  nation?: string; // v3: only when isInternational and a nation is set
   contests: Record<string, V2Score>; // keyed by contest number
 };
 
@@ -32,6 +34,8 @@ export type V2CompetitionDoc = {
   v: 2 | 3;
   name: string;
   date: string;
+  isInternational?: boolean; // v3
+  debugOnly?: true; // v3: only on debug syncs
   contestants: Record<string, V2Contestant>;
   results: Record<string, Record<string, V2RankingEntry[]>>; // thlon -> category -> ranking
   teams: Record<string, V2Team[]>; // team category -> ranking
@@ -48,6 +52,8 @@ export function fromV2(doc: V2CompetitionDoc): CompetitionDoc {
     ...toResults(doc),
     name: doc.name,
     date: doc.date,
+    isInternational: doc.isInternational ?? false,
+    debugOnly: doc.debugOnly ?? false,
     teams: toTeams(doc),
     finals: toFinals(doc),
   } as CompetitionDoc;
@@ -76,6 +82,7 @@ function toCompetitor(doc: V2CompetitionDoc, { id, total, place }: V2RankingEntr
     id,
     name: contestant?.name ?? "",
     club: contestant?.club ?? "",
+    nation: contestant?.nation,
     number: contestant?.number ?? 0,
     category,
     girl: GIRL_CATEGORIES.includes(category),
@@ -122,6 +129,7 @@ function toFinals(doc: V2CompetitionDoc): FinalsData {
         id,
         name: doc.contestants[id]?.name ?? "",
         club: doc.contestants[id]?.club ?? "",
+        nation: doc.contestants[id]?.nation,
         place,
         score,
         time: TIME_CONTESTS.includes(Number(contest)) ? formatTime(time ?? "") : undefined,

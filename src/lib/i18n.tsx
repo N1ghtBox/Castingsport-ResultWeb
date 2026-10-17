@@ -43,6 +43,7 @@ const DICT: Record<string, Record<string, string>> = {
     "Miejsce": "Place",
     "Zawodnik": "Competitor",
     "Klub": "Club",
+    "Kraj": "Nation",
     "Kategoria": "Category",
     "Suma": "Total",
     "Wynik": "Score",

@@ -4,11 +4,13 @@ import { useMemo } from "react";
 import { useT } from "@/lib/i18n";
 import type { Competitor, FinalEntry, FinalsData, ResultsData } from "@/lib/results/types";
 import { contestNum, contestScore, contestTime, sortCategories, thlonForContest, timeToSeconds } from "@/lib/results/utils";
+import Nation from "./Nation";
 
 type Props = {
   results: ResultsData;
   finals: FinalsData;
   contestKey: string;
+  showNation: boolean;
   activeCategory: string;
   onCategoryChange: (cat: string) => void;
 };
@@ -17,6 +19,7 @@ type Row = {
   id: string;
   name: string;
   club: string;
+  nation?: string;
   category: string;
   place: number;
   score: string; // contest score without the time
@@ -53,7 +56,7 @@ function buildRows(ranking: Competitor[], finalists: FinalEntry[], contestKey: s
   const byId = new Map(ranking.map((c) => [c.id, c]));
   const finalIds = new Set(finalists.map((f) => f.id));
 
-  const toRow = (c: Competitor | undefined, place: number): Omit<Row, "id" | "name" | "club"> => {
+  const toRow = (c: Competitor | undefined, place: number): Omit<Row, "id" | "name" | "club" | "nation"> => {
     const raw = String(c?.[contestKey] ?? "");
     const time = c && contestTime(c, contestKey);
     return {
@@ -65,10 +68,10 @@ function buildRows(ranking: Competitor[], finalists: FinalEntry[], contestKey: s
   };
 
   return [
-    ...finalists.map((f) => ({ id: f.id, name: f.name, club: f.club, ...toRow(byId.get(f.id), f.place), final: f })),
+    ...finalists.map((f) => ({ id: f.id, name: f.name, club: f.club, nation: f.nation, ...toRow(byId.get(f.id), f.place), final: f })),
     ...ranking
       .filter((c) => !finalIds.has(c.id))
-      .map((c, i) => ({ id: c.id, name: c.name, club: c.club, ...toRow(c, finalists.length + i + 1) })),
+      .map((c, i) => ({ id: c.id, name: c.name, club: c.club, nation: c.nation, ...toRow(c, finalists.length + i + 1) })),
   ];
 }
 
@@ -76,6 +79,7 @@ export default function ContestResultsView({
   results,
   finals,
   contestKey,
+  showNation,
   activeCategory,
   onCategoryChange,
 }: Props) {
@@ -127,6 +131,7 @@ export default function ContestResultsView({
               <tr className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
                 <th className="px-3 py-3 text-center w-10">{t("Miejsce")}</th>
                 <th className="col-name py-3 text-left">{t("Zawodnik")}</th>
+                {showNation && <th className="px-3 py-3 text-left">{t("Kraj")}</th>}
                 <th className="px-3 py-3 text-left hidden sm:table-cell">{t("Klub")}</th>
                 <th className="px-3 py-3 text-left hidden md:table-cell">{t("Kategoria")}</th>
                 <th className="px-3 py-3 text-right font-bold">{t("Wynik")}</th>
@@ -145,6 +150,7 @@ export default function ContestResultsView({
                 >
                   <td className="px-3 py-3 text-center text-gray-400">{row.place}</td>
                   <td className="col-name py-3 font-medium text-white">{row.name}</td>
+                  {showNation && <td className="px-3 py-3 text-gray-300 tabular-nums"><Nation code={row.nation} /></td>}
                   <td className="px-3 py-3 text-gray-400 hidden sm:table-cell">{row.club}</td>
                   <td className="px-3 py-3 hidden md:table-cell">
                     <span className="inline-block px-2 py-0.5 bg-gray-700 text-gray-300 rounded-full text-xs">

@@ -7,12 +7,13 @@ export type Competitor = {
   number: number;
   category: string;
   club: string;
+  nation?: string; // ISO 3166-1 alpha-2 ("PL"), international competitions only
   girl: boolean;
   isNew: boolean;
   total: number;
   place: number;
   // "contest-N": formatted score, e.g. "95", "95 01:23:450", "12.50 10.00" or "40 60.00"
-  [key: string]: string | number | boolean;
+  [key: string]: string | number | boolean | undefined;
 };
 
 // thlon tab ("5boj", ...) -> category -> ranked competitors
@@ -44,6 +45,7 @@ export type FinalEntry = {
   id: string;
   name: string;
   club: string;
+  nation?: string;
   place: number;
   score: number; // points in timed contests, distance otherwise
   time?: string; // timed contests only: "01:23:450", or "—" if missing
@@ -59,6 +61,8 @@ export type FinalsData = {
 export type CompetitionDoc = ResultsData & {
   name?: string;
   date?: string;
+  isInternational?: boolean; // show the nation column
+  debugOnly?: boolean; // left off the main page, still reachable by link
   teams?: TeamsData;
   finals?: FinalsData;
 };

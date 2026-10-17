@@ -1,2 +1,4 @@
 node_modules
 .next
+# copied from svg-country-flags by scripts/copy-flags.mjs
+public/flags

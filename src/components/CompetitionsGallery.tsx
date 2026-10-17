@@ -5,22 +5,14 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useT } from "@/lib/i18n";
 import Link from "next/link";
-import { normalizeCompetitionDoc } from "@/lib/adapters/competition";
-import { dateSortKey, dateYear, isThlonKey } from "@/lib/results/utils";
-
-type CompetitionMeta = {
-  id: string;
-  name?: string;
-  date?: string;
-  categoryCount: number;
-  participantCount: number;
-};
+import { groupCompetitions, isSubdivided, listedEntries, type CompetitionGroup } from "@/lib/competitions";
+import { dateSortKey, dateYear } from "@/lib/results/utils";
 
 type SerieMeta = { id: string; name?: string; year?: number; type?: string; competitionIds: string[] };
 
 // Newest year first, unknown ("—") last. Inputs are already sorted within a year.
-function yearGroups(competitions: CompetitionMeta[], series: SerieMeta[]) {
-  const groups = new Map<string, { series: SerieMeta[]; comps: CompetitionMeta[] }>();
+function yearGroups(competitions: CompetitionGroup[], series: SerieMeta[]) {
+  const groups = new Map<string, { series: SerieMeta[]; comps: CompetitionGroup[] }>();
   const get = (y: string) => groups.get(y) ?? groups.set(y, { series: [], comps: [] }).get(y)!;
   for (const s of series) get(s.year ? String(s.year) : "—").series.push(s);
   for (const c of competitions) get(dateYear(c.date)).comps.push(c);
@@ -29,7 +21,7 @@ function yearGroups(competitions: CompetitionMeta[], series: SerieMeta[]) {
 
 export default function CompetitionsGallery() {
   const t = useT();
-  const [competitions, setCompetitions] = useState<CompetitionMeta[]>([]);
+  const [competitions, setCompetitions] = useState<CompetitionGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [series, setSeries] = useState<SerieMeta[]>([]);
@@ -60,27 +52,7 @@ export default function CompetitionsGallery() {
     const unsub = onSnapshot(
       collection(db, "Competitions"),
       (snap) => {
-        const data: CompetitionMeta[] = snap.docs.map((doc) => {
-          const d = normalizeCompetitionDoc(doc.data());
-          let participantCount = 0;
-          let categoryCount = 0;
-          for (const key of Object.keys(d)) {
-            if (!isThlonKey(key)) continue;
-            for (const arr of Object.values(d[key])) {
-              if (arr.length > 0) {
-                categoryCount++;
-                participantCount += arr.length;
-              }
-            }
-          }
-          return {
-            id: doc.id,
-            name: d.name,
-            date: d.date,
-            categoryCount,
-            participantCount,
-          };
-        });
+        const data = groupCompetitions(listedEntries(snap));
         data.sort((a, b) => dateSortKey(b.date) - dateSortKey(a.date));
         setCompetitions(data);
         setLoading(false);
@@ -146,35 +118,68 @@ export default function CompetitionsGallery() {
               </>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {comps.map((comp) => (
-                <Link
-                  key={comp.id}
-                  href={`/competition/${comp.id}`}
-                  className="group block bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-blue-500 hover:bg-gray-800 transition-all"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-semibold text-white text-lg leading-tight group-hover:text-blue-400 transition-colors">
-                      {comp.name ?? t("Zawody")}
-                    </h3>
-                    <span className="text-blue-400 text-lg ml-2 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                  </div>
-                  {comp.date && (
-                    <p className="text-gray-500 text-xs mb-3">{comp.date}</p>
-                  )}
-                  {seriesByComp.has(comp.id) && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {seriesByComp.get(comp.id)!.map((s) => (
-                        <span
-                          key={s.id}
-                          className="px-2 py-0.5 rounded-full text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30"
-                        >
-                          {s.name ?? t("Serie")}
-                        </span>
-                      ))}
+              {comps.map((comp) => {
+                const subdivided = isSubdivided(comp);
+                const body = (
+                  <>
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-semibold text-white text-lg leading-tight group-hover:text-blue-400 transition-colors">
+                        {comp.name ?? t("Zawody")}
+                        {comp.docs.some((d) => d.debugOnly) && (
+                          <span className="ml-2 align-middle px-2 py-0.5 rounded-full text-xs font-normal text-amber-400 bg-amber-500/10 border border-amber-500/30">
+                            {t("Debug")}
+                          </span>
+                        )}
+                      </h3>
+                      {!subdivided && (
+                        <span className="text-blue-400 text-lg ml-2 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                      )}
                     </div>
-                  )}
-                </Link>
-              ))}
+                    {comp.date && (
+                      <p className="text-gray-500 text-xs mb-3">{comp.date}</p>
+                    )}
+                    {subdivided && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {comp.docs.map((d) => (
+                          <Link
+                            key={d.id}
+                            href={`/competition/${d.id}`}
+                            className="px-3 py-1 rounded-full text-xs font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 hover:border-blue-500 transition-colors"
+                          >
+                            {d.name ?? d.id}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    {seriesByComp.has(comp.id) && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {seriesByComp.get(comp.id)!.map((s) => (
+                          <span
+                            key={s.id}
+                            className="px-2 py-0.5 rounded-full text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30"
+                          >
+                            {s.name ?? t("Serie")}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+                // a subdivided competition has no page of its own: its subcategories are the links
+                return subdivided ? (
+                  <div key={comp.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+                    {body}
+                  </div>
+                ) : (
+                  <Link
+                    key={comp.id}
+                    href={`/competition/${comp.docs[0].id}`}
+                    className="group block bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-blue-500 hover:bg-gray-800 transition-all"
+                  >
+                    {body}
+                  </Link>
+                );
+              })}
             </div>
           </section>
         ))

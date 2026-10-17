@@ -10,5 +10,6 @@ const ResultsPage = dynamic(
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  return <ResultsPage id={id} />;
+  // remount when switching between a competition's subcategories
+  return <ResultsPage key={id} id={id} />;
 }

@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-flags.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-flags.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -12,7 +14,8 @@
     "firebase": "^12.13.0",
     "next": "^16.2.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "svg-country-flags": "^1.2.10"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { competitionDocsQuery, groupCompetitions, isSubdivided, listedEntries } from "@/lib/competitions";
 import { useT } from "@/lib/i18n";
 import Link from "next/link";
 import { SERIE_TAB_ORDER, TEAMS_TAB } from "@/lib/results/constants";
@@ -45,18 +46,24 @@ export default function SeriesPage({ id }: { id: string }) {
     return () => unsub();
   }, [id]);
 
-  // competitionIds aren't aligned with competitions[], so labels come from the docs themselves
+  // competitionIds aren't aligned with competitions[], so labels come from the docs themselves;
+  // a competition with subcategories gets a link per subcategory
   const idsKey = (data?.competitionIds ?? []).join(",");
   useEffect(() => {
     if (!idsKey) return setLinked([]);
     let cancelled = false;
     Promise.all(
       idsKey.split(",").map(async (cid) => {
-        const snap = await getDoc(doc(db, "Competitions", cid));
-        return snap.exists() ? { id: cid, name: (snap.data().name as string) ?? cid } : null;
+        const group = groupCompetitions(listedEntries(await getDocs(competitionDocsQuery(cid))))[0];
+        if (!group) return [];
+        if (!isSubdivided(group)) return [{ id: cid, name: group.name ?? cid }];
+        return group.docs.map((d) => ({
+          id: d.id,
+          name: [group.name, d.name].filter(Boolean).join(" · ") || d.id,
+        }));
       })
     ).then((res) => {
-      if (!cancelled) setLinked(res.filter((r) => r !== null));
+      if (!cancelled) setLinked(res.flat());
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [idsKey]);
